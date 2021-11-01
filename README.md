@@ -1,7 +1,5 @@
 # Book Search Engine
 
-# React Portfolio
-
 ![badge](https://img.shields.io/badge/license-MIT-brightgreen)
 
   ## Description
