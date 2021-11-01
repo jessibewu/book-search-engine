@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { SAVE_BOOK } from '../utils/mutations.js';
+import { useMutation } from "@apollo/client";
 import { Jumbotron, Container, Col, Form, Button, Card, CardColumns } from 'react-bootstrap';
 
 import Auth from '../utils/auth';
 import { searchGoogleBooks } from '../utils/API';
 import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
-
-// import SAVE_BOOK mutation
-import { useMutation } from '@apollo/client';
-import { SAVE_BOOK } from '../utils/mutations';
 
 const SearchBooks = () => {
   // create state for holding returned google api data
@@ -18,11 +16,11 @@ const SearchBooks = () => {
   // create state to hold saved bookId values
   const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
 
-  // mutation hook:
-  const [saveBook, { error }] = useMutation(SAVE_BOOK);
-
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
   // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
+
+  const [saveBook, { error }] = useMutation(SAVE_BOOK);
+
   useEffect(() => {
     return () => saveBookIds(savedBookIds);
   });
@@ -50,6 +48,7 @@ const SearchBooks = () => {
         title: book.volumeInfo.title,
         description: book.volumeInfo.description,
         image: book.volumeInfo.imageLinks?.thumbnail || '',
+        link: book.volumeInfo.infoLink,
       }));
 
       setSearchedBooks(bookData);
@@ -72,21 +71,16 @@ const SearchBooks = () => {
     }
 
     try {
-      const { data } = await saveBook({
-        variables: { input: bookToSave }
+       await saveBook({
+        variables: { input: bookToSave},
       });
-
-      if (error) {
-        throw new Error('something went wrong!');
-      }
-
       // if book successfully saves to user's account, save book id to state
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);
     } catch (err) {
       console.error(err);
     }
   };
-
+  
   return (
     <>
       <Jumbotron fluid className='text-light bg-dark'>
@@ -130,6 +124,7 @@ const SearchBooks = () => {
                 <Card.Body>
                   <Card.Title>{book.title}</Card.Title>
                   <p className='small'>Authors: {book.authors}</p>
+                  <p className='small'>Link: <a href={book.link} target="_blank" rel="noopener noreferrer">{book.link}</a></p>
                   <Card.Text>{book.description}</Card.Text>
                   {Auth.loggedIn() && (
                     <Button
@@ -137,11 +132,12 @@ const SearchBooks = () => {
                       className='btn-block btn-info'
                       onClick={() => handleSaveBook(book.bookId)}>
                       {savedBookIds?.some((savedBookId) => savedBookId === book.bookId)
-                        ? 'This book has already been saved!'
+                        ? 'This book has been saved!'
                         : 'Save this Book!'}
                     </Button>
                   )}
                 </Card.Body>
+                {error && <div> Something went wrong...</div>}
               </Card>
             );
           })}
